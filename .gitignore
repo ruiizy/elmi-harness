@@ -1,0 +1,73 @@
+# Archivos de configuración con API keys
+config.yaml
+config.yml
+config.json
+.env
+.env.local
+.env.*.local
+*.secret
+*.key
+secrets/
+
+# Binarios compilados de Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/bin/
+/dist/
+/build/
+
+# Archivos de Go
+go.work
+go.work.sum
+vendor/
+*.cover
+*.coverprofile
+
+# IDEs y Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Logs y bases de datos
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos temporales
+/tmp/
+*.tmp
+.cache/
+
+# Archivos específicos del proyecto
+/data/
+/uploads/
+/downloads/
+
+# Claude Code / tooling
+.claude/
+.agents/
+skills-lock.json
+
+# Compiled binary
+/elmi-harness
+
+# Node modules (si usas herramientas JS)
+node_modules/
+
+# Certificados y claves
+*.pem
+*.crt
+*.key
+*.p12
+*.pfx
