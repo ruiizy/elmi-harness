@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"time"
@@ -11,7 +13,10 @@ import (
 	"github.com/ruiizy/elmi-harness/internal/api"
 )
 
-const maxReadFileBytes = 10 * 1024 * 1024 // 10 MB
+const (
+	maxReadFileBytes = 10 * 1024 * 1024 // 10 MB
+	maxFetchBytes    = 512 * 1024        // 512 KB
+)
 
 // Execute runs the named tool with rawInput (JSON) and returns (output, isError).
 func Execute(name, rawInput string) (string, bool) {
@@ -64,6 +69,30 @@ func Execute(name, rawInput string) (string, bool) {
 		}
 		return "wrote " + in.Path, false
 
+	case "fetch":
+		var in struct {
+			URL string `json:"url"`
+		}
+		if err := json.Unmarshal([]byte(rawInput), &in); err != nil {
+			return err.Error(), true
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, in.URL, nil)
+		if err != nil {
+			return err.Error(), true
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err.Error(), true
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(io.LimitReader(resp.Body, maxFetchBytes))
+		if err != nil {
+			return err.Error(), true
+		}
+		return string(body), false
+
 	default:
 		return fmt.Sprintf("unknown tool: %s", name), true
 	}
@@ -97,6 +126,14 @@ func Definitions() []api.ToolDef {
 				"content": map[string]any{"type": "string", "description": "Content to write."},
 			},
 			Required: []string{"path", "content"},
+		},
+		{
+			Name:        "fetch",
+			Description: "Fetch a URL and return its content.",
+			InputSchema: map[string]any{
+				"url": map[string]any{"type": "string", "description": "The URL to fetch."},
+			},
+			Required: []string{"url"},
 		},
 	}
 }

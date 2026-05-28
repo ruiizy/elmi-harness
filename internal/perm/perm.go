@@ -1,6 +1,6 @@
 package perm
 
-import "fmt"
+import ()
 
 type Mode int
 
@@ -71,9 +71,32 @@ func (c *Config) ResetAskOnce() { c.askOnceGrant = map[string]bool{} }
 // confirm is called only when a prompt is actually needed.
 // Returns (run, override): run=true → execute tool;
 // run=false, override="" → denied; run=false, override≠"" → send override to model.
+// GrantSession grants permanent session-level permission for a tool (never ask again).
+func (c *Config) GrantSession(name string) { c.sessionGrant[name] = true }
+
+// GrantAskOnce marks a tool as already-answered for ModeAskOnce.
+func (c *Config) GrantAskOnce(name string) { c.askOnceGrant[name] = true }
+
+// NeedsConfirm reports whether the tool requires interactive user confirmation.
+// Returns false for any auto-allow case.
+func (c *Config) NeedsConfirm(name string) bool {
+	if c.sessionGrant[name] {
+		return false
+	}
+	switch c.Mode {
+	case ModeAlwaysAllow:
+		return false
+	case ModeAllowList:
+		return !c.AllowList[name]
+	case ModeAskOnce:
+		return !c.askOnceGrant[name]
+	default:
+		return true
+	}
+}
+
 func (c *Config) Check(name, input string, confirm ConfirmFunc) (run bool, override string) {
 	if c.sessionGrant[name] {
-		fmt.Printf("[auto] %s (session grant)\n", name)
 		return true, ""
 	}
 
@@ -82,12 +105,10 @@ func (c *Config) Check(name, input string, confirm ConfirmFunc) (run bool, overr
 		return true, ""
 	case ModeAllowList:
 		if c.AllowList[name] {
-			fmt.Printf("[auto] %s (allow-list)\n", name)
 			return true, ""
 		}
 	case ModeAskOnce:
 		if c.askOnceGrant[name] {
-			fmt.Printf("[auto] %s (ask-once)\n", name)
 			return true, ""
 		}
 	}
